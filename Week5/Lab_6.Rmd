@@ -1,0 +1,133 @@
+---
+title: 'Lab 6: R Functions'
+author: "Vivian Cai"
+date: "2/6/2022"
+output: pdf_document
+---
+
+```{r setup, include=FALSE}
+knitr::opts_chunk$set(echo = TRUE)
+```
+
+## Improving analysis code by writing functions
+
+A. 
+1) Original code: 
+```{r}
+# (A. Can you improve this analysis code?
+df <- data.frame(a=1:10, b=seq(200,400,length=10),c=11:20,d=NA)
+df$a <- (df$a - min(df$a)) / (max(df$a) - min(df$a))
+df$b <- (df$b - min(df$a)) / (max(df$b) - min(df$b))
+df$c <- (df$c - min(df$c)) / (max(df$c) - min(df$c))
+df$d <- (df$d - min(df$d)) / (max(df$a) - min(df$d))
+```
+
+2) Fix copy/paste errors:
+```{r}
+df <- data.frame(a=1:10, b=seq(200,400,length=10),c=11:20,d=NA)
+df$a <- (df$a - min(df$a)) / (max(df$a) - min(df$a))
+df$b <- (df$b - min(df$b)) / (max(df$b) - min(df$b))
+df$c <- (df$c - min(df$c)) / (max(df$c) - min(df$c))
+df$d <- (df$d - min(df$d)) / (max(df$d) - min(df$d))
+```
+
+3) Write a function to clean it up:
+```{r}
+df <- data.frame(a=1:10, b=seq(200,400,length=10),c=11:20,d=NA)
+scaling <- function(x, na.rm = TRUE) {
+  rng <- range(x, na.rm = na.rm)
+  (x - rng[1]) / (rng[2] - rng[1])
+}
+
+scaling(df$a)
+```
+
+B. 
+1) Original code:
+```{r}
+# Can you improve this analysis code?
+#install.packages("bio3d")
+library(bio3d)
+s1 <- read.pdb("4AKE")  # kinase with drug
+s2 <- read.pdb("1AKE")  # kinase no drug
+s3 <- read.pdb("1E4Y")  # kinase with drug
+s1.chainA <- trim.pdb(s1, chain="A", elety="CA")
+s2.chainA <- trim.pdb(s2, chain="A", elety="CA")
+s3.chainA <- trim.pdb(s1, chain="A", elety="CA")
+s1.b <- s1.chainA$atom$b
+s2.b <- s2.chainA$atom$b
+s3.b <- s3.chainA$atom$b
+plotb3(s1.b, sse=s1.chainA, typ="l", ylab="Bfactor")
+plotb3(s2.b, sse=s2.chainA, typ="l", ylab="Bfactor")
+plotb3(s3.b, sse=s3.chainA, typ="l", ylab="Bfactor")
+```
+
+2) Copy/Paste error gone:
+```{r}
+# Can you improve this analysis code?
+#install.packages("bio3d")
+library(bio3d)
+s1 <- read.pdb("4AKE")  # kinase with drug
+s2 <- read.pdb("1AKE")  # kinase no drug
+s3 <- read.pdb("1E4Y")  # kinase with drug
+s1.chainA <- trim.pdb(s1, chain="A", elety="CA")
+s2.chainA <- trim.pdb(s2, chain="A", elety="CA")
+s3.chainA <- trim.pdb(s3, chain="A", elety="CA")
+s1.b <- s1.chainA$atom$b
+s2.b <- s2.chainA$atom$b
+s3.b <- s3.chainA$atom$b
+plotb3(s1.b, sse=s1.chainA, typ="l", ylab="Bfactor")
+plotb3(s2.b, sse=s2.chainA, typ="l", ylab="Bfactor")
+plotb3(s3.b, sse=s3.chainA, typ="l", ylab="Bfactor")
+```
+
+3) Clean up with a new function:
+```{r}
+PDB_Bfac_plt <- function(x, chain = "A", elety = "CA", typ = "l", ylab = "Bfactor") {
+  PDB <- read.pdb(x)
+  Chain_PDB <- trim.pdb(PDB, chain = chain, elety = elety)
+  Chain_atomb <- Chain_PDB$atom$b
+  plotb3(Chain_atomb, sse = Chain_PDB, typ = typ, ylab = ylab)
+}
+
+PDB_Bfac_plt("4AKE")
+PDB_Bfac_plt("1AKE")
+PDB_Bfac_plt("1E4Y")
+```
+4) Questions:
+**Q1. What type of object is returned from the read.pdb() function? **
+```{r}
+str(read.pdb("4AKE"))
+```
+A data frame is returned.
+
+**Q2. What does the trim.pdb() function do?**
+```{r}
+?trim.pdb
+```
+It creates a smaller PDB from a given PDB object, containing a subset of atoms from the original PDB.
+
+**Q3. What input parameter would turn off the marginal black and grey rectangles in the plots and what do they represent in this case?**
+```{r}
+plotb3(s1.b, sse=NULL, typ="l", ylab="Bfactor")
+```
+As shown, turning off the sse argument gets rid of the bars, which are indications of secondary structures as returned from dssp, stride or in certsin cases read.pdb. 
+
+**Q4. What would be a better plot to compare across the different proteins?**
+I think the same line plot with 3 Bfactor lines showing on the same plit would be good for comparison, since all 3 proteins of interest are the same length.
+
+**Q5. Which proteins are more similar to each other in their B-factor trends. How could you quantify this? HINT: try the rbind(), dist() and hclust() functions together with a resulting dendrogram plot. Look up the documentation to see what each of these functions does.**
+```{r}
+hc <- hclust( dist( rbind(s1.b, s2.b, s3.b) ) )
+plot(hc)
+```
+rbind combines the rows of a chosen data.frame, in this case, all the b-factor values for each protein we are looking at are combined into the same dataframe.(As shown below)
+```{r}
+head(rbind(s1.b, s2.b, s3.b))
+```
+
+Then, dist computes the distance between rows of the gicen data.frame. Therefore, each element in each row is considered and compared with the other rows. The dist result caculated is then used to make the dendrogram. 
+In our case, s1 and s3 are more similar to each other than they are to s2.
+
+**Q6. How would you generalize the original code above to work with any set of input protein structures?**
+This is already done using my PDB_Bfac_plt() function.

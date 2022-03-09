@@ -1,0 +1,49 @@
+---
+title: "Class 10 HW"
+author: "Vivian Cai"
+date: "2/20/2022"
+output: pdf_document
+---
+
+# Section 4: Population Scale Analysis [HOMEWORK]
+
+```{r}
+# Read the data into R using the url on the class website
+data = read.table("https://bioboot.github.io/bggn213_W22/class-material/rs8067378_ENSG00000172057.6.txt")
+
+# Take a look
+summary(data)
+```
+### Q13: Read this file into R and determine the sample size for each genotype and their corresponding median expression levels for each of these genotypes.
+
+As shown below, there are **108 A|A, 233 A|G, and 121 G|G** genotypes in the dataset, and their respective median expressions are **31.2, 25.1, and 20.1** FPKM.
+
+```{r}
+library(dplyr)
+
+data %>%
+  group_by(geno) %>%
+  summarise(length(sample), median(exp))
+```
+
+### Q14: Generate a boxplot with a box per genotype, what could you infer from the relative expression value between A/A and G/G displayed in this plot? Does the SNP effect the expression of ORMDL3?
+
+As shown below, the **G|G genotype has a lower expression level than the A|A genotype**. Even the heterozygous A|G shows a reduced expression level (the sample distribution is located at a generally lower level). Thus, **the SNP does affect ORMDL3 expression**. Whether or not this change is biologically relevant requires expreiemntal evidence.
+
+```{r}
+library(ggplot2)
+
+# converting our data$geno to a factor object
+data$geno <- as.factor(data$geno)
+head(data)
+
+# Make boxplot with ggplot2
+ggplot(data, aes(x = geno, y = exp, fill = geno)) +
+         geom_boxplot(outlier.colour="blue", outlier.shape=16,
+             outlier.size=2, notch=TRUE) +
+         geom_jitter(shape=16, position=position_jitter(0.2), alpha = 0.4) +
+         labs(x="Genotype", y = "Expression (FPKM)") +
+         scale_fill_manual(values=c("#999999", "#E69F00", "#56B4E9")) +
+         theme(legend.position="none")
+```
+

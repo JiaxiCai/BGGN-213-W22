@@ -1,0 +1,172 @@
+---
+title: "R Functions Lab (Week 5)"
+author: "Vivian Cai"
+date: "2/6/2022"
+output: pdf_document
+---
+
+```{r setup, include=FALSE}
+knitr::opts_chunk$set(echo = TRUE)
+```
+
+# Writing a Function to Grade Students' Homework
+
+##1) Start with simple vectors
+```{r}
+# Example input vectors to start with
+student1 <- c(100, 100, 100, 100, 100, 100, 100, 90) 
+student2 <- c(100, NA, 90, 90, 90, 90, 97, 80) 
+student3 <- c(90, NA, NA, NA, NA, NA, NA, NA)
+```
+**Q1. Write a function grade() to determine an overall grade from a vector of student homework assignment scores dropping the lowest single score. If a student misses a homework (i.e. has an NA value) this can be used as a score to be potentially dropped. Your final function should be adquately explained with code comments and be able to work on an example class gradebook such as this one in CSV format: <https://tinyurl.com/gradeinput> [3pts]**
+
+```{r}
+# identify the lowest score first
+min(student1)
+min(student2)
+min(student3) # min identifies NA as the lowest, that saves work for me!
+```
+```{r}
+# finding the location of the smallest value
+which.min(student1)
+which.min(student2)
+which.min(student3)
+# which.mean doesn't identify NA as the lowest, bummer
+```
+
+```{r}
+# exploring base function mean and na.rm argument
+mean(student1)
+mean(student2)
+mean(student2, na.rm = TRUE)
+# na.rm works but is not going to be a fair way for us to calculate grades, since any student with more than one missed assignment will get a higher average than what they deserve
+```
+
+```{r}
+# exploring is.na()
+is.na(student1)
+is.na(student2)
+# We can use the boolean to select and swap out all the NAs
+student2[is.na(student2)]
+student2[is.na(student2)] <- 0
+student2
+student3[is.na(student3)] <- 0
+student3
+# looking pretty good
+```
+
+```{r}
+# now to drop the lowest scores, going back to which.min
+which.min(student3) 
+# now that I have NAs changed to 0, I can find the lowest score with no problem!
+```
+
+```{r}
+# Time to write the function!
+grade <- function(x) {
+  x[is.na(x)] <- 0
+  mean(x[-which.min(x)])
+}
+
+# reload example vectors
+student1 <- c(100, 100, 100, 100, 100, 100, 100, 90) 
+student2 <- c(100, NA, 90, 90, 90, 90, 97, 80) 
+student3 <- c(90, NA, NA, NA, NA, NA, NA, NA)
+
+# try out the function
+grade(student1)
+grade(student2)
+grade(student3)
+```
+ Great! That was fun!
+ 
+"Your final function should be adquately explained with **code comments** and be able to work on an example class gradebook such as this one in CSV format: <https://tinyurl.com/gradeinput>"
+
+```{r}
+# current function
+#' Mean Value for Vector (Dropping the lowest value)
+#' Calculates the average score after exluding the lowest score. The missing/NA values will be treated as Os.
+#'
+#' @param x Numeric vector of a set of values/scores
+#'
+#' @return Average value/score
+#' @export
+#'
+#' @examples
+#' student <- c(25, NA, NA, 60, 80, 95)
+#‘ grade(student)
+
+grade <- function(x) {
+  # swapping out missing homework values to 0
+  x[is.na(x)] <- 0
+  # get the mean after dropping the lowest score
+  mean(x[-which.min(x)])
+}
+```
+
+Time to try out the gradebook!
+```{r}
+# reading out the csv file from a link and store it as the gradebook
+url <- "https://tinyurl.com/gradeinput" 
+gradebook <- read.csv(url)
+gradebook
+# changing row name column
+gradebook <- read.csv(url, row.names = 1)
+gradebook
+```
+
+```{r}
+# use the apply() function on the gradebook array
+apply(gradebook, 1, grade) # here 1 is for row since we want to calculated across the rows, if we want to do this across the columns, we need to put 2 for the second argument
+```
+
+**Q2. Using your grade() function and the supplied gradebook, Who is the top scoring student overall in the gradebook? [3pts]**
+```{r}
+mean.score <- apply(gradebook, 1, grade)
+# two ways!
+which.max(mean.score)
+sort(mean.score, decreasing = TRUE)
+```
+
+**Q3. From your analysis of the gradebook, which homework was toughest on students (i.e. obtained the lowest scores overall? [2pts]**
+
+```{r}
+# calculate summary stats of the gradebook
+head(gradebook) # inspect first
+apply(gradebook, 2, mean) # not quite
+ave <- apply(gradebook, 2, mean, na.rm = TRUE)
+which.min(ave)
+```
+```{r}
+# let's try sum
+apply(gradebook, 2, sum) # not quite
+sum <- apply(gradebook, 2, sum, na.rm = TRUE)
+which.min(sum)
+```
+```{r} 
+# median should also work
+apply(gradebook, 2, median, na.rm = TRUE)
+med <- apply(gradebook, 2, median,na.rm = TRUE)
+which.min(sum)
+```
+
+```{r}
+# plotting things is always good
+boxplot(gradebook)
+```
+**Q4. Optional Extension: From your analysis of the gradebook, which homework was most predictive of overall score (i.e. highest correlation with average grade score)? [1pt]**
+```{r}
+# ?cor
+head(mean.score)
+gradebook[is.na(gradebook)]<- 0
+cor(mean.score, gradebook$hw1)
+cor(mean.score, gradebook$hw5)
+```
+
+```{r}
+apply(gradebook, 2, cor, mean.score)
+```
+
+**Q5. Make sure you save your Rmarkdown document and can click the “Knit” button to generate a PDF foramt report without errors. Finally, submit your PDF to gradescope. [1pt]**
+
+
