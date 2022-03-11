@@ -3,6 +3,4 @@ Bioinformatics class (R-focused)
 
 Repo for my Bioinformatics class!!!
 
-Adding one more line.
-
-Adding another line.
+This repo contains all my work for BGGN213 throughout this quarter!
